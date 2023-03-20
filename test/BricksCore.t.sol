@@ -26,7 +26,7 @@ contract BricksCoreTest is Test {
         bricksCore = new BricksCore();
         proxyAdmin = new ProxyAdmin();
         transparentUpgradeableProxy =
-        new TransparentUpgradeableProxy(address(bricksCore), address(proxyAdmin), abi.encodeWithSignature("setVault(address)", address(vault)));
+        new TransparentUpgradeableProxy(address(bricksCore), address(proxyAdmin), abi.encodeWithSignature("intialize(address)", address(vault)));
         bricksCore = BricksCore(address(transparentUpgradeableProxy));
         mockERC721 = new MockERC721();
     }
