@@ -51,12 +51,13 @@ contract BricksCore is Initializable {
         uint256 tokenId,
         uint256 fractionsNumber,
         string memory name,
-        string memory symbol
+        string memory symbol,
+        address receiver
     ) external returns (address) {
         require(IERC721(contractAddress).getApproved(tokenId) == address(this), "token transfer not approved !");
-        IERC721(contractAddress).safeTransferFrom(msg.sender, vault, tokenId);
+        IERC721(contractAddress).safeTransferFrom(msg.sender, vaultAddress, tokenId);
 
-        Fractions fractions = new Fractions(name, symbol, fractionsNumber);
+        Fractions fractions = new Fractions(name, symbol, fractionsNumber, receiver);
 
         OriginalNFT memory originalNFT = OriginalNFT(contractAddress, tokenId);
         storedOriginal[address(fractions)] = originalNFT;

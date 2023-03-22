@@ -4,11 +4,11 @@ pragma solidity ^0.8.13;
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 
 contract Fractions is ERC20Votes {
-    constructor(string memory name_, string memory symbol_, uint256 initialSupply)
+    constructor(string memory name_, string memory symbol_, uint256 initialSupply, address receiver)
         ERC20(name_, symbol_)
         ERC20Permit(name_)
     {
-        _mint(tx.origin, initialSupply);
+        _mint(receiver, initialSupply);
     }
 
     // The functions below are overrides required by Solidity.
