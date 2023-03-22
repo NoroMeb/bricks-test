@@ -11,6 +11,10 @@ contract Fractions is ERC20Votes {
         _mint(receiver, initialSupply);
     }
 
+    function burn(address account, uint256 amount) external {
+        super._burn(account, amount);
+    }
+
     // The functions below are overrides required by Solidity.
 
     function _afterTokenTransfer(address from, address to, uint256 amount) internal override(ERC20Votes) {
