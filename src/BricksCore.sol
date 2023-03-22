@@ -2,6 +2,8 @@
 pragma solidity ^0.8.13;
 
 import "./Fractions.sol";
+import "./IFractions.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "./IVault.sol";
@@ -92,16 +94,28 @@ contract BricksCore is Initializable {
         return address(fractions);
     }
 
-    function assemble(address fractionsContractAddress) external {
+    /**
+     * @notice  . You can call the assemble function to get the Original NFT
+     *               if you have the total supply of the Functions
+     * @param   fractionsContractAddress  . the address of the Fractions contract
+     * @param   receiver  . The receiver of the Original NFT
+     */
+    function assemble(address fractionsContractAddress, address receiver) external {
         require(
             IERC20(fractionsContractAddress).allowance(msg.sender, address(this))
                 == IERC20(fractionsContractAddress).totalSupply(),
             "You need to gather all fractions to get the NFT"
         );
 
+        IERC20(fractionsContractAddress).transferFrom(
+            msg.sender, address(this), IERC20(fractionsContractAddress).totalSupply()
+        );
+
+        IFractions(fractionsContractAddress).burn(address(this), IERC20(fractionsContractAddress).totalSupply());
+
         OriginalNFT memory originalNFT = storedOriginal[fractionsContractAddress];
 
-        IVault(vaultAddress).transferOriginal(originalNFT.contractAddress, originalNFT.tokenId, msg.sender);
+        IVault(vaultAddress).transferOriginal(originalNFT.contractAddress, originalNFT.tokenId, receiver);
 
         emit TokenAssembled(originalNFT.contractAddress, originalNFT.tokenId);
     }
