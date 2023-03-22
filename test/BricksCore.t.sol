@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 import "../src/BricksCore.sol";
 import "../src/Fractions.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../src/Vault.sol";
 import "./mocks/MockERC721.sol";
 import "../src/transparent_proxy/TransparentUpgradeableProxy.sol";
@@ -40,6 +41,18 @@ contract BricksCoreTest is Test {
         return fractions;
     }
 
+    function approveAndFractionAndBurn() internal returns (address) {
+        mockERC721.approve(address(bricksCore), 0);
+        address fractions =
+            bricksCore.fractionAndBurn(address(mockERC721), 0, TOTAL_FRACTIONS_NUMBER, name, symbol, address(this));
+        return fractions;
+    }
+
+    function assemble(address fractions) internal {
+        IERC20(fractions).approve(address(bricksCore), IERC20(fractions).balanceOf(address(this)));
+        bricksCore.assemble(fractions, address(this));
+    }
+
     function testFractionTransferTokenToVault() public {
         approveAndFraction();
         assertEq(mockERC721.ownerOf(0), address(bricksCore.vaultAddress()));
@@ -63,18 +76,46 @@ contract BricksCoreTest is Test {
         assertEq(tokenId, 0);
     }
 
-    function testFractionEmitTokenFractionedEvent() public {
-        vm.expectEmit(false, false, false, true, address(bricksCore));
-
-        address fractions =
-            address(uint160(uint256(keccak256(abi.encodePacked(bytes1(0xd6), bytes1(0x94), _origin, bytes1(0x80))))));
-        emit TokenFractioned(fractions, TOTAL_FRACTIONS_NUMBER);
-
-        approveAndFraction();
-    }
-
     function testCannotFractionNotApprovedToken() public {
         vm.expectRevert("token transfer not approved !");
         bricksCore.fraction(address(mockERC721), 0, TOTAL_FRACTIONS_NUMBER, name, symbol, address(this));
+    }
+
+    function testFractionAndBurnTransferTokenToBurnignAddress() public {
+        approveAndFractionAndBurn();
+        assertEq(mockERC721.ownerOf(0), address(bricksCore.burningAddress()));
+    }
+
+    function testFractionAndBurnCreatesFractionsContract() public {
+        address fractions = approveAndFractionAndBurn();
+
+        assertEq(Fractions(fractions).name(), name);
+        assertEq(Fractions(fractions).symbol(), symbol);
+        assertEq(Fractions(fractions).totalSupply(), TOTAL_FRACTIONS_NUMBER);
+        assertEq(Fractions(fractions).balanceOf(address(this)), TOTAL_FRACTIONS_NUMBER);
+    }
+
+    function testCannotFractionAndBurnNotApprovedToken() public {
+        vm.expectRevert("token transfer not approved !");
+        bricksCore.fractionAndBurn(address(mockERC721), 0, TOTAL_FRACTIONS_NUMBER, name, symbol, address(this));
+    }
+
+    function testAssembleBurnFractions() public {
+        address fractions = approveAndFraction();
+        assemble(fractions);
+        assertEq(IERC20(fractions).totalSupply(), 0);
+    }
+
+    function testAssembleSendOriginalNFTToReceiver() public {
+        address fractions = approveAndFraction();
+        assemble(fractions);
+        assertEq(mockERC721.ownerOf(0), address(this));
+    }
+
+    function testCannotAssembleNotApprovedToken() public {
+        address fractions = approveAndFraction();
+        vm.expectRevert("You need to gather all fractions to get the NFT");
+
+        bricksCore.assemble(fractions, address(this));
     }
 }
