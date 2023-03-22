@@ -5,12 +5,14 @@ import "./Fractions.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "./IVault.sol";
+import "./Vault.sol";
 
 contract BricksCore is Initializable {
     event TokenFractioned(address fractionsAddress, uint256 totalSupply);
     event TokenAssembled(address contractAddress, uint256 tokenId);
 
-    address public vault;
+    address public vaultAddress;
+    address public burningAddress;
 
     struct OriginalNFT {
         address contractAddress;
@@ -99,7 +101,7 @@ contract BricksCore is Initializable {
 
         OriginalNFT memory originalNFT = storedOriginal[fractionsContractAddress];
 
-        IVault(vault).transferOriginal(originalNFT.contractAddress, originalNFT.tokenId, msg.sender);
+        IVault(vaultAddress).transferOriginal(originalNFT.contractAddress, originalNFT.tokenId, msg.sender);
 
         emit TokenAssembled(originalNFT.contractAddress, originalNFT.tokenId);
     }
