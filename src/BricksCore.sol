@@ -58,6 +58,29 @@ contract BricksCore is Initializable {
         return address(fractions);
     }
 
+    /**
+     * @notice  . call to burn your NFT (transfer to an address in which it can't be retrieved ),
+     *               deploy an ERC20 contract and mint a specified number
+     *            of tokens to the NFT owner . (NFT must be approved to the contract)
+     */
+    function fractionAndBurn(
+        address contractAddress,
+        uint256 tokenId,
+        uint256 fractionsNumber,
+        string memory name,
+        string memory symbol,
+        address receiver
+    ) external returns (address) {
+        require(IERC721(contractAddress).getApproved(tokenId) == address(this), "token transfer not approved !");
+        IERC721(contractAddress).transferFrom(msg.sender, burningAddress, tokenId);
+
+        Fractions fractions = new Fractions(name, symbol, fractionsNumber, receiver);
+
+        emit TokenFractioned(address(fractions), fractionsNumber);
+
+        return address(fractions);
+    }
+
     function assemble(address fractionsContractAddress) external {
         require(
             IERC20(fractionsContractAddress).allowance(msg.sender, address(this))
