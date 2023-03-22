@@ -23,9 +23,9 @@ contract BricksCore is Initializable {
 
     mapping(address => OriginalNFT) public storedOriginal;
 
-    /*
+    /**
      * @dev     . Initializer function, can be called once when TransparentUpgradeableProxy is deployed
-     * @param   vaultAddress  . the Address of the Vault contract where Original NFTs are stored .
+     *             . Deploys the Vault Contract / Deploys the Burning Contract .
      */
     function intialize() external initializer {
         Vault vault = new Vault(address(this));
