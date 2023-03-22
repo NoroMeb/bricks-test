@@ -71,4 +71,10 @@ contract BricksCore is Initializable {
 
         emit TokenAssembled(originalNFT.contractAddress, originalNFT.tokenId);
     }
+
+    function getStoredOriginal(address fractionsAddress) public view returns (address, uint256) {
+        OriginalNFT memory originalNFT = storedOriginal[fractionsAddress];
+
+        return (originalNFT.contractAddress, originalNFT.tokenId);
+    }
 }
