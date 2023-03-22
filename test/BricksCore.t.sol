@@ -21,25 +21,28 @@ contract BricksCoreTest is Test {
     string public name = "F-MockERC721#0";
     string public symbol = "FM#0";
 
+    event TokenFractioned(address fractionsAddress, uint256 totalSupply);
+    event TokenAssembled(address contractAddress, uint256 tokenId);
+
     function setUp() public {
-        vault = new Vault();
         bricksCore = new BricksCore();
         proxyAdmin = new ProxyAdmin();
         transparentUpgradeableProxy =
-        new TransparentUpgradeableProxy(address(bricksCore), address(proxyAdmin), abi.encodeWithSignature("intialize(address)", address(vault)));
+        new TransparentUpgradeableProxy(address(bricksCore), address(proxyAdmin), abi.encodeWithSignature("intialize()"));
         bricksCore = BricksCore(address(transparentUpgradeableProxy));
         mockERC721 = new MockERC721();
     }
 
     function approveAndFraction() internal returns (address) {
         mockERC721.approve(address(bricksCore), 0);
-        address fractions = bricksCore.fraction(address(mockERC721), 0, TOTAL_FRACTIONS_NUMBER, name, symbol);
+        address fractions =
+            bricksCore.fraction(address(mockERC721), 0, TOTAL_FRACTIONS_NUMBER, name, symbol, address(this));
         return fractions;
     }
 
     function testFractionTransferTokenToVault() public {
         approveAndFraction();
-        assertEq(mockERC721.ownerOf(0), address(vault));
+        assertEq(mockERC721.ownerOf(0), address(bricksCore.vaultAddress()));
     }
 
     function testFractionCreatesFractionsContract() public {
@@ -48,11 +51,30 @@ contract BricksCoreTest is Test {
         assertEq(Fractions(fractions).name(), name);
         assertEq(Fractions(fractions).symbol(), symbol);
         assertEq(Fractions(fractions).totalSupply(), TOTAL_FRACTIONS_NUMBER);
-        assertEq(Fractions(fractions).balanceOf(msg.sender), TOTAL_FRACTIONS_NUMBER);
+        assertEq(Fractions(fractions).balanceOf(address(this)), TOTAL_FRACTIONS_NUMBER);
+    }
+
+    function testFractionMapFractionsAddressToOriginalNFT() public {
+        address fractions = approveAndFraction();
+
+        (address contractAddress, uint256 tokenId) = bricksCore.getStoredOriginal(fractions);
+
+        assertEq(contractAddress, address(mockERC721));
+        assertEq(tokenId, 0);
+    }
+
+    function testFractionEmitTokenFractionedEvent() public {
+        vm.expectEmit(false, false, false, true, address(bricksCore));
+
+        address fractions =
+            address(uint160(uint256(keccak256(abi.encodePacked(bytes1(0xd6), bytes1(0x94), _origin, bytes1(0x80))))));
+        emit TokenFractioned(fractions, TOTAL_FRACTIONS_NUMBER);
+
+        approveAndFraction();
     }
 
     function testCannotFractionNotApprovedToken() public {
         vm.expectRevert("token transfer not approved !");
-        bricksCore.fraction(address(mockERC721), 0, TOTAL_FRACTIONS_NUMBER, name, symbol);
+        bricksCore.fraction(address(mockERC721), 0, TOTAL_FRACTIONS_NUMBER, name, symbol, address(this));
     }
 }
